@@ -39,7 +39,7 @@ const STATIC_ALLOWED_ORIGINS = [
 app.use(
   cors({
     origin(origin, callback) {
-      // No Origin header: curl, Postman, server-to-server, the test harness.
+      // CORS handling
       if (!origin) return callback(null, true);
       if (
         STATIC_ALLOWED_ORIGINS.includes(origin) ||
@@ -50,8 +50,7 @@ app.use(
         return callback(null, true);
       }
 
-      // Unknown browser origin: refuse the CORS headers rather than the request,
-      // so non-browser clients (the marker's test harness) are never blocked.
+      
       return callback(null, false);
     },
     credentials: true,
@@ -60,8 +59,7 @@ app.use(
     maxAge: 86400,
   }),
 );
-// 100kb is the right ceiling for every JSON endpoint except the meter photo,
-// which carries a base64 image and mounts its own parser on the route.
+// 100kb is the right ceiling for every JSON endpoint except the meter photo, which carries a base64 image and mounts its own parser on the route.
 const smallJson = express.json({
   limit: '100kb',
   strict: true,
@@ -82,8 +80,7 @@ if (!config.isProd) {
 }
 
 // ---------------------------------------------------------------------------
-// Database: connect before any route runs. On Vercel this resolves instantly
-// after the first invocation thanks to the cached connection in db.ts.
+// Database connection
 // ---------------------------------------------------------------------------
 app.use(
   asyncHandler(async (_req, _res, next) => {
@@ -93,9 +90,9 @@ app.use(
 );
 
 // ---------------------------------------------------------------------------
-// Routes
+// Routes - standard route is the health route
 // ---------------------------------------------------------------------------
-app.get('/health', (_req, res) => {
+app.get('/', (_req, res) => {
   const states = {
     0: 'disconnected',
     1: 'connected',
@@ -109,20 +106,6 @@ app.get('/health', (_req, res) => {
     time: new Date().toISOString(),
   });
 });
-app.get('/', (_req, res) => {
-  res.json({
-    service: 'MySLP — My Shangri-La Power REST API',
-    endpoints: {
-      health: '/health',
-      councilTaxCheck:
-        '/rest/council_tax_check?postcode=LE17RH&fulladdress=20 University Road, Shangri-La',
-      statistics: '/rest/statistics/{band}/{postcode_prefix}',
-      auth: '/api/auth/{register,login,check-email,me}',
-      customer: '/api/{profile,readings,bills,vouchers/redeem,payments,usage}',
-      admin: '/api/admin/{tariffs,customers,statistics,vouchers}',
-    },
-  });
-});
 
 // Task 2 — public, automatically tested.
 app.use('/rest', restRoutes);
@@ -134,7 +117,7 @@ app.use('/api', accountRoutes);
 app.use('/api', customerRoutes);
 
 // ---------------------------------------------------------------------------
-// 404 + the single error handler. These must be last.
+// Error Handler
 // ---------------------------------------------------------------------------
 app.use(notFoundHandler);
 app.use(errorHandler);
