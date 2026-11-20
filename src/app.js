@@ -44,7 +44,6 @@ app.use(
       if (
         STATIC_ALLOWED_ORIGINS.includes(origin) ||
         config.corsOrigins.includes(origin) ||
-        /^https:\/\/[a-z0-9-]+\.lovable\.app$/i.test(origin) ||
         /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin) ||
         /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin)
       ) {
