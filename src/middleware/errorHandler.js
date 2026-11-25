@@ -3,17 +3,14 @@ import { ZodError } from 'zod';
 import { ApiError } from '../utils/errors.js';
 import { config } from '../config.js';
 
-/**
- * Wraps an async handler so a rejected promise always reaches the error
- * handler. Without this Express 4 swallows async throws and the request hangs.
- */
+//Wraps an async handler 
 export function asyncHandler(fn) {
   return (req, res, next) => {
     Promise.resolve(fn(req, res, next)).catch(next);
   };
 }
 
-/** JSON 404 for unknown routes — never an HTML error page. */
+//JSON 404 for unknown routes — never an HTML error page
 export function notFoundHandler(req, res) {
   res.status(404).json({
     error: {
@@ -23,11 +20,7 @@ export function notFoundHandler(req, res) {
   });
 }
 
-/**
- * The single place any error becomes a response. Unknown errors become an
- * opaque 500: the real error is logged server-side and NEVER sent to the
- * client, so no stack trace, Mongo error or connection string can leak.
- */
+//validation error check
 export function errorHandler(err, _req, res, _next) {
   if (err instanceof ApiError) {
     res.status(err.status).json(err.toJSON());
@@ -49,7 +42,7 @@ export function errorHandler(err, _req, res, _next) {
     return;
   }
 
-  // A malformed ObjectId is a client mistake, not a server fault.
+  // A malformed ObjectId is a client mistake, not a server fault
   if (err instanceof mongoose.Error.CastError) {
     res.status(400).json({
       error: {
@@ -75,7 +68,7 @@ export function errorHandler(err, _req, res, _next) {
     return;
   }
 
-  // Duplicate key (e.g. a race on a unique email index).
+  // Duplicate key (e.g. a race on a unique email index)
   if (typeof err === 'object' && err !== null && err.code === 11000) {
     res.status(409).json({
       error: {
@@ -86,7 +79,7 @@ export function errorHandler(err, _req, res, _next) {
     return;
   }
 
-  // Anything else: log the truth, return nothing useful to an attacker.
+  // Anything else: log the truth, return nothing useful to an attacker(this is kind of a fail safe).
   console.error('[myslp] Unhandled error:', err);
   res.status(500).json({
     error: {
