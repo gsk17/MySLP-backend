@@ -1,7 +1,5 @@
-/**
- * Every error the client can see is an ApiError. The global error handler turns
- * anything else into an opaque 500 so internal details never leak.
- */
+//Every error the client can see is an ApiError. The global error handler turns anything else into an opaque 500 so internal details never leak
+ 
 export class ApiError extends Error {
   constructor(status, code, message, field) {
     super(message);
