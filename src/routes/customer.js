@@ -20,8 +20,7 @@ import {
 import { notFound } from '../utils/errors.js';
 const router = Router();
 
-// Everything in this router is for the signed-in customer only. Queries are
-// ALWAYS scoped by req.user.sub, never by an id taken from the request.
+// Everything in this router is for the signed-in customer only. Queries are ALWAYS scoped by req.user.sub, never by an id taken from the request.
 router.use(requireAuth, rejectStaleSession);
 const readingSchema = z.object({
   readingDate: z
@@ -58,7 +57,7 @@ const voucherSchema = z.object({
 });
 
 // ---------------------------------------------------------------------------
-// GET /api/profile — the dashboard header payload
+// GET /api/profile 
 // ---------------------------------------------------------------------------
 router.get(
   '/profile',
@@ -103,14 +102,10 @@ router.get(
     });
   }),
 );
-/**
- * Read a meter photograph. Returns candidate numbers for the customer to
- * check — it never creates a reading.
- */
+
 router.post(
   '/readings/scan',
-  // Its own parser: the global one caps JSON at 100kb, and a base64 photo is
-  // far larger. 2mb covers OCR.space's own 1MB file limit once encoded.
+  // Its own parser: the global one caps JSON at 100kb, and a base64 photo is far larger. 2mb covers OCR.space's own 1MB file limit once encoded.
   express.json({ limit: '2mb' }),
   asyncHandler(async (req, res) => {
     const result = await readMeterImage(req.body?.image);
@@ -129,8 +124,6 @@ router.post(
   asyncHandler(async (req, res) => {
     const input = req.body;
     const { reading, bill } = await createReading(req.user.sub, input);
-    // Fire and forget: a notification must never fail the submission, and the
-    // customer should not wait on an SMTP round trip to see their bill.
     if (bill) void notifyNewBill(req.user.sub, bill);
     res.status(201).json({
       reading: reading.toJSON(),
@@ -167,8 +160,6 @@ router.get(
 router.post(
   '/bills/:id/pay',
   asyncHandler(async (req, res) => {
-    // Read the balance before the payment so the low-credit alert can fire on
-    // the crossing only, rather than on every payment made while already low.
     const before = (await User.findById(req.user.sub).select('energyCredit'))?.energyCredit ?? 0;
     const { bill, energyCredit } = await payBill(req.user.sub, req.params.id);
     void notifyPaymentReceipt(req.user.sub, {
@@ -188,9 +179,7 @@ router.post(
 // ---------------------------------------------------------------------------
 // Vouchers and payments
 // ---------------------------------------------------------------------------
-/**
- * Read a voucher photograph. Returns candidate codes; it never redeems one.
- */
+
 router.post(
   '/vouchers/scan',
   express.json({ limit: '2mb' }),
