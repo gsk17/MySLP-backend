@@ -17,18 +17,11 @@ import { issueEmailChangeCode, verifyRawCode } from '../services/otp.js';
 import { normalisePostcode } from '../utils/normalise.js';
 import { badRequest, conflict, notFound } from '../utils/errors.js';
 
-/**
- * Account self-service: the things a customer can change about their own
- * record, plus their notifications.
- *
- * Every route is scoped by req.user.sub. Nothing here takes an id from the
- * request body, so one customer can never act on another's account.
- */
 const router = Router();
 router.use(requireAuth, rejectStaleSession);
 
 /* ------------------------------------------------------------------------ */
-/* Address and property type                                                 */
+/* Address and property type                                                */
 /* ------------------------------------------------------------------------ */
 
 const addressSchema = z.object({
@@ -48,9 +41,6 @@ router.patch(
     const user = await User.findById(req.user.sub);
     if (!user) throw notFound('USER_NOT_FOUND', 'Your account could not be found.');
 
-    // Re-run the council tax lookup: moving house can change the band, and an
-    // address that is not on the register must clear it rather than keep the
-    // old one, which would no longer describe where they live.
     const property = await lookupCouncilTaxBand(
       {
         fulladdress: `${input.addressLine}, ${input.city}`,
@@ -68,8 +58,6 @@ router.patch(
     user.councilTaxBand = property?.councilTaxBand ?? null;
     await user.save();
 
-    // Moving into bands A-D qualifies for the Council payment, if it has not
-    // already been paid. Moving OUT never takes it back.
     const awarded = await awardCouncilPaymentIfDue(user);
 
     res.json({
@@ -86,7 +74,7 @@ router.patch(
 );
 
 /* ------------------------------------------------------------------------ */
-/* Email (the login ID) — two steps, because the new address must be proven  */
+/* Email (the login ID)                                                     */
 /* ------------------------------------------------------------------------ */
 
 const emailRequestSchema = z.object({
@@ -102,8 +90,7 @@ router.post(
     const user = await User.findById(req.user.sub).select('+passwordHash');
     if (!user) throw notFound('USER_NOT_FOUND', 'Your account could not be found.');
 
-    // The current password is required: an unattended session should not be
-    // enough to move the account to someone else's inbox.
+    // The current password is required: an unattended session should not be enough to move the account to someone else's inbox.
     if (!(await bcrypt.compare(password, user.passwordHash))) {
       throw badRequest('INVALID_PASSWORD', 'That password is not correct.', 'password');
     }
@@ -165,8 +152,7 @@ router.post(
       );
     }
 
-    // Re-check uniqueness: someone else may have registered it while the code
-    // was in flight.
+    // Re-check uniqueness: someone else may have registered it while the code was in flight.
     if (await User.findOne({ email: record.email })) {
       await record.deleteOne();
       throw conflict('EMAIL_ALREADY_REGISTERED', 'That email is now in use.', 'email');
@@ -188,7 +174,7 @@ router.post(
 );
 
 /* ------------------------------------------------------------------------ */
-/* Password                                                                   */
+/* Password                                                                 */
 /* ------------------------------------------------------------------------ */
 
 const passwordSchema = z.object({
@@ -221,8 +207,7 @@ router.post(
     }
 
     user.passwordHash = await bcrypt.hash(newPassword, config.bcryptRounds);
-    // Stamping this invalidates every token issued before now, so changing the
-    // password signs out every other device — the point of changing it.
+    // Stamping this invalidates every token issued before now, so changing the password signs out every other device — the point of changing it.
     user.passwordChangedAt = new Date();
     await user.save();
     await EmailVerification.deleteMany({ userId: user._id });
@@ -235,7 +220,7 @@ router.post(
 );
 
 /* ------------------------------------------------------------------------ */
-/* Notification preferences                                                   */
+/* Notification preferences                                                 */
 /* ------------------------------------------------------------------------ */
 
 const prefsSchema = z.object({
@@ -291,7 +276,7 @@ router.post(
 );
 
 /* ------------------------------------------------------------------------ */
-/* Export and delete                                                          */
+/* Export and delete                                                        */
 /* ------------------------------------------------------------------------ */
 
 router.get(
@@ -348,9 +333,7 @@ router.delete(
       throw badRequest('INVALID_PASSWORD', 'That password is not correct.', 'password');
     }
 
-    // An account cannot be closed while it owes money. Deleting it would erase
-    // the bill without settling it, which is not the customer's to decide —
-    // the debt is the Council's.
+    // An account cannot be closed while it owes money. 
     const unpaid = await Bill.find({ userId: user._id, status: 'unpaid' }).lean();
     if (unpaid.length > 0) {
       const owed = unpaid.reduce((sum, b) => sum + b.totalAmount, 0);
@@ -361,8 +344,7 @@ router.delete(
     }
 
     const id = user._id;
-    // Everything owed is settled by this point. Vouchers are deliberately not
-    // touched: a redeemed voucher is a record of the Council's money.
+    // Everything owed is settled by this point. Vouchers are deliberately not touched: a redeemed voucher is a record of the Council's money.
     await Promise.all([
       MeterReading.deleteMany({ userId: id }),
       Bill.deleteMany({ userId: id }),
