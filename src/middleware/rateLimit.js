@@ -2,26 +2,14 @@ import mongoose from 'mongoose';
 import { RateLimit } from '../models/RateLimit.js';
 import { tooManyRequests } from '../utils/errors.js';
 
-/**
- * Fixed-window rate limiter, counted in MongoDB.
- *
- * The count is shared rather than per-process, because the API runs as a
- * serverless function: each invocation may land in a different instance with
- * its own memory, and a cold start empties it. A counter held in memory would
- * therefore limit per-instance, letting the same caller keep going simply by
- * being routed somewhere new.
- *
- * The whole check is ONE atomic update. A read-then-write would let two
- * requests arriving together both see the same count and both be allowed,
- * which is exactly the case a limiter exists to stop.
- */
+//Fixed-window rate limiter, counted in MongoDB.
+
 export function rateLimit(options) {
   return function rateLimiter(req, res, next) {
     const now = new Date();
     const resetAt = new Date(now.getTime() + options.windowMs);
 
-    // Behind a proxy the socket address is the proxy's, so prefer the
-    // forwarded client address where there is one.
+    // Behind a proxy the socket address is the proxy's, so prefer the forwarded client address where there is one.
     const forwarded = req.headers['x-forwarded-for'];
     const ip =
       (Array.isArray(forwarded) ? forwarded[0] : forwarded?.split(',')[0]?.trim()) ||
@@ -29,9 +17,7 @@ export function rateLimit(options) {
       'unknown';
     const key = `${ip}:${req.baseUrl}${req.path}`;
 
-    // No database yet (startup, or a dropped connection): allow the request.
-    // Failing closed here would lock everyone out of signing in over a
-    // problem that has nothing to do with them.
+    // No database yet (startup, or a dropped connection): allow the request. Failing closed here would lock everyone out of signing in over a problem that has nothing to do with them.
     if (mongoose.connection.readyState !== 1) {
       next();
       return;
@@ -41,9 +27,7 @@ export function rateLimit(options) {
       { _id: key },
       [
         {
-          // An aggregation-pipeline update so "is the window still live?" and
-          // "increment it" happen in the same operation. A live window is
-          // incremented; an expired or missing one starts again at 1.
+          // An aggregation-pipeline update so "is the window still live?" and "increment it" happen in the same operation. A live window is incremented; an expired or missing one starts again at 1.
           $set: {
             resetAt: {
               $cond: [{ $gt: ['$resetAt', now] }, '$resetAt', resetAt],
@@ -74,8 +58,7 @@ export function rateLimit(options) {
         next();
       })
       .catch((err) => {
-        // Same reasoning as above: a limiter that cannot count must not be
-        // able to take the API down with it.
+        // Same reasoning as above: a limiter that cannot count must not be able to take the API down with it.
         console.error('[myslp] rate limit check failed:', err.message);
         next();
       });
