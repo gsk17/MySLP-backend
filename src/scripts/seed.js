@@ -13,9 +13,7 @@ import { awardCouncilPaymentIfDue } from '../services/councilPayment.js';
 import { normaliseAddress, normalisePostcode } from '../utils/normalise.js';
 import { COUNCIL_TAX_PROPERTIES as PROPERTIES } from '../data/councilTaxProperties.js';
 
-/** Coursework Appendix 4 — sample addresses and their council tax bands. */
 
-/** Coursework Appendix 2 — all valid ESSV codes. */
 const VOUCHER_CODES = [
   '1AZN0FXJVM',
   'JOV50TOSYR',
@@ -41,7 +39,7 @@ const VOUCHER_CODES = [
   'YTAQ39BR27',
 ];
 
-/** Demo customers, one per band A-D, spread across the LE1/LE2/SL1/SL2 prefixes. */
+
 const DEMO_CUSTOMERS = [
   {
     email: 'alice@shangri-la.sl',
@@ -130,16 +128,16 @@ const DEMO_CUSTOMERS = [
   },
 ];
 
-/** Monthly reading dates, ending a month before today so "today" stays free. */
+
 const READING_DATES = ['2026-06-20', '2026-07-20', '2026-08-20', '2026-09-20', '2026-10-20'];
 
-/** Seasonal variation, so the seeded charts show a realistic shape. */
+
 const SEASON = [1, 0.82, 0.74, 0.95, 1.24];
 async function seed() {
   console.log('\n  Seeding the MySLP database...\n');
   await connectDB();
 
-  // --- Council tax properties (idempotent upsert) --------------------------
+
   for (const p of PROPERTIES) {
     await CouncilTaxProperty.updateOne(
       {
@@ -161,7 +159,7 @@ async function seed() {
   }
   console.log(`  ✓ ${PROPERTIES.length} council tax properties`);
 
-  // --- Vouchers ------------------------------------------------------------
+
   for (const code of VOUCHER_CODES) {
     await Voucher.updateOne(
       {
@@ -181,7 +179,6 @@ async function seed() {
   }
   console.log(`  ✓ ${VOUCHER_CODES.length} ESSV vouchers`);
 
-  // --- Initial tariff ------------------------------------------------------
   const tariffCount = await Tariff.countDocuments();
   if (tariffCount === 0) {
     await Tariff.create({
@@ -196,7 +193,7 @@ async function seed() {
     console.log(`  · ${tariffCount} tariff(s) already present, left untouched`);
   }
 
-  // --- Administrator -------------------------------------------------------
+
   const adminEmail = config.adminSeedEmail.toLowerCase();
   const existingAdmin = await User.findOne({
     email: adminEmail,
@@ -221,7 +218,7 @@ async function seed() {
     console.log(`  · Administrator ${adminEmail} already exists`);
   }
 
-  // --- Demo customers with real readings and bills --------------------------
+
   const demoHash = await bcrypt.hash(config.demoSeedPassword, config.bcryptRounds);
   for (const demo of DEMO_CUSTOMERS) {
     let user = await User.findOne({
@@ -250,12 +247,7 @@ async function seed() {
       energyCredit: config.startingEnergyCredit,
     });
 
-    // The Council payment goes through the same service registration uses, so
-    // a seeded demo account looks exactly like one that signed up.
     await awardCouncilPaymentIfDue(user);
-
-    // Submit readings through the real billing service so the seeded data is
-    // exactly what the application itself would have produced.
     let day = demo.start.day;
     let night = demo.start.night;
     let gas = demo.start.gas;
@@ -272,8 +264,7 @@ async function seed() {
         gas,
       });
     }
-
-    // Pay every bill except the most recent, so there is always one unpaid.
+    
     const bills = await Bill.find({
       userId: user._id,
     }).sort({
