@@ -1,12 +1,4 @@
-/**
- * Zero-setup local demo: starts an in-memory MongoDB, seeds it, and serves the
- * API — no Atlas account or local mongod required.
- *
- *   npm run dev:memory
- *
- * Data is discarded when the process exits. Use `npm run dev` with a real
- * MONGODB_URI for anything you want to keep, and for the submitted build.
- */
+//developement memory seeding
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { COUNCIL_TAX_PROPERTIES as PROPERTIES } from '../data/councilTaxProperties.js';
 async function main() {
