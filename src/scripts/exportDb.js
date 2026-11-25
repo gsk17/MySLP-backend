@@ -3,12 +3,7 @@ import path from 'node:path';
 import mongoose from 'mongoose';
 import { connectDB, disconnectDB } from '../db.js';
 
-/**
- * Exports every collection to exports/myslp.json for the coursework
- * submission. The brief asks for "your database schema and all data" — for a
- * MongoDB project this JSON dump plus the Mongoose schemas in src/models is
- * the equivalent of the .sql file a relational submission would provide.
- */
+//Exports every collection to exports/myslp.json for the coursework submission.
 async function exportDb() {
   await connectDB();
   const dir = path.resolve(process.cwd(), 'exports');
@@ -31,7 +26,7 @@ async function exportDb() {
       {
         exportedAt: new Date().toISOString(),
         database: db.databaseName,
-        note: 'MongoDB export for CO3102/CO7102 CW2. Restore with: mongoimport --uri "<MONGODB_URI>" --collection <name> --jsonArray --file <name>.json, or run `npm run seed` to recreate this data from scratch.',
+        note: 'MongoDB export for CO3102/CO7102 CW2.',
         collections: dump,
       },
       null,
