@@ -1,20 +1,3 @@
-/**
- * The council tax register for the Valley of Shangri-La.
- *
- * Shared by `npm run seed` and `npm run dev:memory` so the two cannot drift.
- *
- * ─────────────────────────────────────────────────────────────────────────
- * THE FIRST FIVE ARE FROM APPENDIX 4 OF THE COURSEWORK BRIEF AND MUST NOT
- * CHANGE. Task 2 is graded by an automated harness that checks these exact
- * address/band pairs. Add new entries below them; never edit these.
- * ─────────────────────────────────────────────────────────────────────────
- *
- * The rest are Leicester streets standing in for Shangri-La, spread across
- * bands A to H so that a realistic address entered during a demo resolves to
- * a band instead of falling through to "not found". Bands follow the usual
- * pattern — city-centre flats low, suburban semis mid, large detached high —
- * so the data reads plausibly rather than randomly.
- */
 export const COUNCIL_TAX_PROPERTIES = [
   // ---- Appendix 4. Do not modify. ----------------------------------------
   { fullAddress: '1 Queens Road, Shangri-La', postcode: 'SL2 7RH', councilTaxBand: 'A' },
