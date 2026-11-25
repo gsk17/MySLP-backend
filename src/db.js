@@ -1,13 +1,6 @@
 import mongoose from 'mongoose';
 import { config } from './config.js';
 
-/**
- * Vercel runs this API as a serverless function: the module is re-evaluated on
- * a cold start and the same instance is reused for subsequent invocations.
- * Without caching the connection on `globalThis` every cold start would open a
- * brand new pool and quickly exhaust the Atlas M0 connection limit.
- */
-
 const cached =
   global._myslpMongoose ??
   (global._myslpMongoose = {
@@ -45,9 +38,8 @@ export async function disconnectDB() {
   }
 }
 
-/** True when the deployment's MongoDB is a replica set, so transactions are available. */
+//True when the deployment's MongoDB is a replica set, so transactions are available
 export function supportsTransactions() {
-  // Atlas (even M0) is always a replica set. A bare local mongod is not.
   const topology = mongoose.connection.client?.topology?.s?.description?.type;
   return topology === 'ReplicaSetWithPrimary' || topology === 'Sharded';
 }
