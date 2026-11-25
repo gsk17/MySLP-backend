@@ -1,12 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
 
-/**
- * One-time codes emailed to a user.
- *
- * `purpose` separates the two flows: confirming a new address and resetting a
- * forgotten password. Without it a pending sign-up code and a reset code would
- * overwrite one another, since there is at most one live code per user.
- */
 export const OTP_PURPOSES = ['email_verification', 'password_reset', 'email_change'];
 
 const emailVerificationSchema = new Schema(
@@ -30,12 +23,6 @@ const emailVerificationSchema = new Schema(
       trim: true,
       index: true,
     },
-    /**
-     * The address the code was sent to. For 'email_change' this is the NEW
-     * address, which is not yet on the user — that is the whole point of the
-     * flow, and it is what the code is proving control of.
-     */
-    /** SHA-256 HMAC of the code. The plaintext is never stored. */
     codeHash: {
       type: String,
       required: true,
@@ -58,15 +45,8 @@ const emailVerificationSchema = new Schema(
   { timestamps: { createdAt: true, updatedAt: false } },
 );
 
-/** At most one live code per user per flow. */
 emailVerificationSchema.index({ userId: 1, purpose: 1 }, { unique: true });
 
-/**
- * MongoDB deletes the document once expiresAt passes, so expired codes clean
- * themselves up and a stale code can never be replayed. The sweeper runs about
- * once a minute, so verification ALSO checks expiresAt explicitly rather than
- * trusting the document's absence.
- */
 emailVerificationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export const EmailVerification =
