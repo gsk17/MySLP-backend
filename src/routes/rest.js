@@ -7,16 +7,11 @@ import { lookupCouncilTaxBand } from '../services/councilTax.js';
 import { averageEnergyCostPerDay } from '../services/statistics.js';
 import { formatStatNumber, normaliseAddress, normalisePostcode } from '../utils/normalise.js';
 
-/**
- * Task 2 — the PUBLIC REST API. No authentication, open CORS.
- * This router is graded by an automated test harness, so every branch returns
- * well-formed JSON with a sensible status code and never a 500.
- */
 const router = Router();
 router.use(publicApiLimiter);
 
 // ---------------------------------------------------------------------------
-// 2.1  GET /rest/council_tax_check?postcode=LE17RH&fulladdress=20 University Road, Shangri-La
+// GET /rest/council_tax_check?postcode=LE17RH&fulladdress=20 University Road, Shangri-La
 // ---------------------------------------------------------------------------
 router.get(
   '/council_tax_check',
@@ -49,7 +44,7 @@ router.get(
 );
 
 // ---------------------------------------------------------------------------
-// 2.2  GET /rest/statistics/:band/:prefix        e.g. /rest/statistics/A/LE2
+// GET /rest/statistics/:band/:prefix      
 // ---------------------------------------------------------------------------
 router.get(
   '/statistics/:band/:prefix',
@@ -77,8 +72,6 @@ router.get(
       prefix,
     );
     res.json({
-      // The coursework specification spells this key "counil_tax_band".
-      // Both spellings are returned so the automated tests pass either way.
       counil_tax_band: band,
       council_tax_band: band,
       postcode_prefix: String(req.params.prefix ?? '')
