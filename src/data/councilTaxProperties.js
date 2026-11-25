@@ -8,6 +8,7 @@ export const COUNCIL_TAX_PROPERTIES = [
 
   // ---- Band A: city-centre flats and small terraces ----------------------
   { fullAddress: '12 Humberstone Gate, Shangri-La', postcode: 'LE1 3PJ', councilTaxBand: 'A' },
+  { fullAddress: '11 Hannam Court, Shangri-La', postcode: 'LE1 3FT', councilTaxBand: 'A' },
   { fullAddress: '7 Saffron Lane, Shangri-La', postcode: 'LE2 6UH', councilTaxBand: 'A' },
   { fullAddress: '58 Abbey Lane, Shangri-La', postcode: 'LE4 5QX', councilTaxBand: 'A' },
   { fullAddress: '3 Braunstone Gate, Shangri-La', postcode: 'LE3 5LH', councilTaxBand: 'A' },
