@@ -68,18 +68,13 @@ const userSchema = new Schema(
       enum: ['customer', 'admin'],
       default: 'customer',
     },
-    // Set by the one-time code emailed at registration. Sign-in is refused
-    // until it is true.
+    // Set by the one-time code emailed at registration. Sign-in is refused until it is true.
     emailVerified: {
       type: Boolean,
       required: true,
       default: false,
     },
-    /**
-     * When the password last changed. Tokens issued before this are rejected,
-     * so resetting a password ends every other session — otherwise someone who
-     * already holds a token keeps their access after the reset.
-     */
+    
     passwordChangedAt: {
       type: Date,
       default: null,
@@ -89,28 +84,17 @@ const userSchema = new Schema(
       required: true,
       default: config.startingEnergyCredit,
     },
-    /**
-     * When the Council's £200 cost-of-living payment was credited.
-     *
-     * Stored on the user rather than inferred from the band, because the band
-     * can change: someone who moves from band C to band E keeps the money
-     * they were already paid, and must not be paid a second time if they
-     * later move back.
-     */
+    
     councilPaymentPaidAt: {
       type: Date,
       default: null,
     },
-    /**
-     * Which events this customer wants emailed. In-app notifications are
-     * always recorded — they cost nothing and the bell can be ignored — but an
-     * email is an interruption, so each one is opt-out individually.
-     */
+    
     notificationPrefs: {
       newBill: { type: Boolean, default: true },
       paymentReceipt: { type: Boolean, default: true },
       lowCredit: { type: Boolean, default: true },
-      /** Balance at or below which the low-credit warning fires, in pounds. */
+      //Balance at or below which the low-credit warning fires, in pounds. 
       lowCreditThreshold: { type: Number, default: 50, min: 0, max: 10000 },
     },
   },
