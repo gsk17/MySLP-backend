@@ -1,8 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
-/**
- * Tariffs are APPEND-ONLY. Setting new prices inserts a new document; existing
- * rows are never updated, so historic bills can always be explained.
- */
+//Tariffs are APPEND-ONLY. Setting new prices inserts a new document; existing rows are never updated, so historic bills can always be explained.
+
 const tariffSchema = new Schema(
   {
     electricityDayRate: {
@@ -55,7 +53,7 @@ const tariffSchema = new Schema(
 );
 export const Tariff = mongoose.models.Tariff ?? mongoose.model('Tariff', tariffSchema);
 
-/** The tariff in effect right now: newest document with effectiveFrom <= now. */
+// The tariff in effect right now: newest document with effectiveFrom <= now.
 export async function getActiveTariff() {
   const tariff = await Tariff.findOne({
     effectiveFrom: {
