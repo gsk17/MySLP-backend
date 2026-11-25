@@ -9,18 +9,7 @@ export function signToken(payload) {
   });
 }
 
-/**
- * Builds the session payload for a user, stamping the password version into
- * the token.
- *
- * `pv` is the millisecond timestamp of the last password change (0 if never).
- * Comparing it on each request is what lets a stateless JWT be revoked: change
- * the password and every token carrying the old value stops matching.
- *
- * An earlier attempt compared the token's `iat` against passwordChangedAt
- * instead. That silently failed, because `iat` has one-second resolution — a
- * reset in the same second as the token left the old session alive.
- */
+//session builder
 export function sessionPayload(user) {
   return {
     sub: String(user._id),
@@ -30,7 +19,7 @@ export function sessionPayload(user) {
   };
 }
 
-/** Reads and validates the Bearer token. 401 when missing, malformed or expired. */
+// Reads and validates the Bearer token
 export function requireAuth(req, _res, next) {
   const header = req.headers.authorization;
   if (!header || !header.startsWith('Bearer ')) {
@@ -59,15 +48,7 @@ export function requireAuth(req, _res, next) {
   }
 }
 
-/** Layers an admin role check on top of requireAuth. */
-/**
- * Rejects a structurally valid token that predates the account's last password
- * change. JWTs are stateless, so a reset cannot revoke them directly — this
- * compares the token's `iat` against `passwordChangedAt` instead.
- *
- * Mounted after requireAuth on the routes that matter. It costs one indexed
- * lookup, which is why it is not folded into requireAuth itself.
- */
+//admin role check layered on token validation
 export async function rejectStaleSession(req, _res, next) {
   try {
     if (!req.user) return next();
