@@ -1,9 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-/**
- * Energy Support Scheme Vouchers. Redemption is a single atomic
- * findOneAndUpdate on { code, redeemed: false } so a code can never be
- * redeemed twice, even under concurrent requests.
- */
+
 const voucherSchema = new Schema(
   {
     code: {
