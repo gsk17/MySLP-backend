@@ -20,8 +20,6 @@ import {
 import { mailMode } from '../services/mailer.js';
 const router = Router();
 
-/** A hash of a throwaway password, compared against when an email is unknown,
- *  so a failed login takes the same time whether or not the account exists. */
 const DUMMY_HASH = bcrypt.hashSync('myslp-dummy-password-for-timing', 10);
 const emailSchema = z
   .string({
@@ -81,14 +79,12 @@ function publicUser(user) {
     role: user.role,
     emailVerified: user.emailVerified,
     energyCredit: user.energyCredit,
-    // Exposed so the app can say "received" rather than "eligible" once the
-    // Council payment has actually been credited.
     councilPaymentPaidAt: user.councilPaymentPaidAt ?? null,
     createdAt: user.createdAt,
   };
 }
 
-/** Bands A-D qualify for the Shangri-La Council's £200 payment. */
+//Bands A-D qualify for the Shangri-La Council's £200 payment
 function isCouncilPaymentEligible(band) {
   return !!band && ['A', 'B', 'C', 'D'].includes(band.toUpperCase());
 }
@@ -120,8 +116,6 @@ router.post(
         fulladdress: `${input.addressLine}, ${input.city}`,
         postcode: input.postcode,
       },
-      // The app's own form: a real postcode with a flat number or an
-      // unregistered town should still find its property.
       { allowPostcodeOnly: true },
     );
     const user = await User.create({
@@ -138,8 +132,7 @@ router.post(
       energyCredit: config.startingEnergyCredit,
     });
 
-    // Bands A-D get the Council's cost-of-living payment on top of the £500
-    // every account opens with.
+    // Bands A-D get the Council's cost-of-living payment on top of the £500 every account opens with.
     await awardCouncilPaymentIfDue(user);
 
     // No token yet: the account is inert until the emailed code is entered.
@@ -242,11 +235,7 @@ router.post(
 );
 
 // ---------------------------------------------------------------------------
-// POST /api/auth/forgot-password — email a reset code
-//
-// Always answers 200 with the same body. Saying "no such account" here would
-// turn the endpoint into a membership oracle: anybody could test an address
-// and learn whether it is registered.
+// POST /api/auth/forgot-password
 // ---------------------------------------------------------------------------
 const forgotSchema = z.object({ email: emailSchema });
 
@@ -277,7 +266,7 @@ router.post(
 );
 
 // ---------------------------------------------------------------------------
-// POST /api/auth/reset-password — exchange the code for a new password
+// POST /api/auth/reset-password
 // ---------------------------------------------------------------------------
 const resetSchema = z.object({
   email: emailSchema,
@@ -295,9 +284,6 @@ router.post(
   asyncHandler(async (req, res) => {
     const { email, code, password } = req.body;
     const user = await resetPasswordWithCode(email, code, password);
-
-    // Signed straight in: they have just proved both mailbox control and
-    // knowledge of the new password, so a second sign-in step adds nothing.
     const token = signToken(sessionPayload(user));
 
     res.json({
@@ -310,7 +296,7 @@ router.post(
 );
 
 // ---------------------------------------------------------------------------
-// GET /api/auth/mail-status — lets the UI warn when email is not configured
+// GET /api/auth/mail-status
 // ---------------------------------------------------------------------------
 router.get('/mail-status', (_req, res) => {
   res.json({
@@ -331,15 +317,13 @@ router.post(
       email,
     }).select('+passwordHash');
 
-    // Always run a comparison so response timing cannot be used to tell
-    // an unknown email apart from a wrong password.
+    // Always run a comparison so response timing cannot be used to tell an unknown email apart from a wrong password.
     const matches = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
     if (!user || !matches) {
       throw unauthorized('The email address or password is incorrect.', 'INVALID_CREDENTIALS');
     }
 
-    // Correct password, but the address was never confirmed. A distinct code
-    // lets the client send them straight to the code screen.
+    // Correct password, but the address was never confirmed. A distinct code lets the client send them straight to the code screen.
     if (!user.emailVerified) {
       throw new ApiError(
         403,
@@ -357,7 +341,7 @@ router.post(
 );
 
 // ---------------------------------------------------------------------------
-// GET /api/auth/check-email  — powers the live "already registered" hint
+// GET /api/auth/check-email 
 // ---------------------------------------------------------------------------
 router.get(
   '/check-email',
@@ -378,7 +362,7 @@ router.get(
 );
 
 // ---------------------------------------------------------------------------
-// GET /api/auth/check-address — live council tax band preview on the form
+// GET /api/auth/check-address 
 // ---------------------------------------------------------------------------
 router.get(
   '/check-address',
@@ -389,8 +373,7 @@ router.get(
     if (!normaliseAddress(fulladdress) && !normalisePostcode(postcode)) {
       throw badRequest('MISSING_PARAMETERS', 'Provide an address or a postcode to look up.');
     }
-    // The live preview on the sign-up form, so it must agree with what
-    // registration itself will decide.
+    // The live preview on the sign-up form, so it must agree with what registration itself will decide.
     const property = await lookupCouncilTaxBand(
       { fulladdress, postcode },
       { allowPostcodeOnly: true },
