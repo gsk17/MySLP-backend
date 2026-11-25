@@ -1,9 +1,7 @@
 import { ZodError } from 'zod';
 import { badRequest } from '../utils/errors.js';
-/**
- * Validates and REPLACES the given request section with the parsed result, so
- * handlers always receive typed, coerced, trusted data.
- */
+
+// Validates and REPLACES the given request section with the parsed result, so handlers always receive typed, coerced, trusted data.
 export function validate(schema, source = 'body') {
   return (req, _res, next) => {
     try {
@@ -33,7 +31,7 @@ export function validate(schema, source = 'body') {
   };
 }
 
-/** Read the parsed value stashed by `validate` for query/params. */
+// Read the parsed value stashed by `validate` for query/params
 export function validated(req, source) {
   return req[`validated_${source}`] ?? req[source];
 }
