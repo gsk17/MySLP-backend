@@ -1,11 +1,7 @@
 import app from './app.js';
 import { config } from './config.js';
 import { connectDB } from './db.js';
-
-/**
- * Local development entry point ONLY.
- * Vercel never runs this file — it imports the app from api/index.ts.
- */
+//local entry point
 async function main() {
   await connectDB();
   app.listen(config.port, () => {
