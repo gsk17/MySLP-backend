@@ -1,13 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 
-/**
- * An in-app notification: the entries behind the bell in the header.
- *
- * These are recorded for every notifiable event regardless of the customer's
- * email preferences. Turning off an email should silence the inbox, not erase
- * the record — otherwise someone who opted out of email has no way at all to
- * see that a bill was issued.
- */
+//An in-app notification: the entries behind the bell in the header.
+
 export const NOTIFICATION_TYPES = ['new_bill', 'payment_receipt', 'low_credit', 'council_payment'];
 
 const notificationSchema = new Schema(
