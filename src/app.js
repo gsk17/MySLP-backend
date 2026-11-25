@@ -59,7 +59,7 @@ app.use(
     maxAge: 86400,
   }),
 );
-// 100kb is the right ceiling for every JSON endpoint except the meter photo, which carries a base64 image and mounts its own parser on the route.
+// 100kb limit for every JSON endpoint except the meter photo, which carries a base64 image and mounts its own parser on the route.
 const smallJson = express.json({
   limit: '100kb',
   strict: true,
@@ -107,10 +107,10 @@ app.get('/', (_req, res) => {
   });
 });
 
-// Task 2 — public, automatically tested.
+//public, automatically tested.
 app.use('/rest', restRoutes);
 
-// Task 1 — the application API.
+//the application API.
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api', accountRoutes);
