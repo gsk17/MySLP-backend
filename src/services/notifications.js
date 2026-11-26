@@ -2,15 +2,6 @@ import { Notification } from '../models/Notification.js';
 import { User } from '../models/User.js';
 import { sendNoticeEmail } from './mailer.js';
 
-/**
- * Notifications: one in-app record per event, plus an email when the customer
- * has that kind switched on.
- *
- * Every function here is best-effort. A notification is a side effect of
- * something the customer did — submitting a reading, paying a bill — and must
- * never be able to fail that action, so errors are logged and swallowed rather
- * than thrown. The bill is the thing that matters; telling you about it is not.
- */
 
 const money = (n) =>
   `£${Number(n ?? 0).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -18,13 +9,7 @@ const money = (n) =>
 const shortDate = (d) =>
   new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
-/**
- * Records a notification and, if enabled, emails it.
- *
- * @param user   a User document (needs email, fullName, notificationPrefs)
- * @param type   one of NOTIFICATION_TYPES
- * @param parts  { title, body, link, subject, heading, intro, rows, footnote }
- */
+
 async function notify(user, type, parts) {
   const prefs = user.notificationPrefs ?? {};
   // `newBill` -> prefs.newBill. Default to on when the field is missing, so an
@@ -57,7 +42,7 @@ async function notify(user, type, parts) {
   });
 }
 
-/** A new bill has been generated from a meter reading. */
+//A new bill has been generated from a meter reading.
 export async function notifyNewBill(userId, bill) {
   try {
     const user = await User.findById(userId);
@@ -83,7 +68,7 @@ export async function notifyNewBill(userId, bill) {
   }
 }
 
-/** A bill has been paid from energy credit. */
+// A bill has been paid from energy credit. 
 export async function notifyPaymentReceipt(userId, { bill, amount, remainingCredit }) {
   try {
     const user = await User.findById(userId);
@@ -110,13 +95,6 @@ export async function notifyPaymentReceipt(userId, { bill, amount, remainingCred
   }
 }
 
-/**
- * Energy credit has fallen to or below the customer's threshold.
- *
- * Only fires on the crossing, not on every balance change: `before` is the
- * balance prior to the change, so a customer who is already low is not
- * notified again each time they pay.
- */
 export async function notifyLowCreditIfCrossed(userId, before, after) {
   try {
     const user = await User.findById(userId);
@@ -143,7 +121,7 @@ export async function notifyLowCreditIfCrossed(userId, before, after) {
   }
 }
 
-/** The Council's cost-of-living payment has been credited. */
+// The Council's cost-of-living payment has been credited. 
 export async function notifyCouncilPayment(user, amount) {
   try {
     await notify(user, 'council_payment', {
