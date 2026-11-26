@@ -1,35 +1,17 @@
 import { config } from '../config.js';
 import { badRequest } from '../utils/errors.js';
 
-/**
- * Reading a meter from a photograph, via OCR.space.
- *
- * The call is made from the server, never the app: the API key would be
- * extractable from a Capacitor APK, and the free tier is a shared monthly
- * allowance that anyone could then spend.
- *
- * OCR is a SUGGESTION. Meter faces — seven-segment LCDs, mechanical dials,
- * glare, angles — are among the harder things to read reliably, so nothing
- * here submits a reading. It returns candidate numbers for the customer to
- * check and correct, and the existing "must not be lower than the previous
- * reading" validation remains the real guard.
- */
 
 const ENDPOINT = 'https://api.ocr.space/parse/image';
 
-/** OCR.space free tier caps the upload; reject early with a clear message. */
+//OCR.space free tier caps the upload; reject early with a clear message.
 const MAX_BYTES = 1024 * 1024;
 
 export function ocrConfigured() {
   return Boolean(config.ocrSpaceKey);
 }
 
-/**
- * Pulls candidate meter readings and a date out of raw OCR text.
- *
- * Exported separately from the network call so it can be tested exhaustively
- * without spending API quota or depending on the service being up.
- */
+
 export function parseMeterText(text) {
   const raw = String(text ?? '');
   // Normalise the characters OCR most often confuses on a digital display.
@@ -38,9 +20,8 @@ export function parseMeterText(text) {
     .replace(/[lI|]/g, '1')
     .replace(/[Ss]/g, '5');
 
-  // --- date ---------------------------------------------------------------
-  // Matched and removed BEFORE numbers, so "13/11/2026" cannot be mistaken
-  // for three meter readings.
+  // --- date
+  // Matched and removed BEFORE numbers, so "13/11/2026" cannot be mistaken for three meter readings.
   let date = null;
   let withoutDate = cleaned;
 
@@ -51,30 +32,20 @@ export function parseMeterText(text) {
     date = isoDate(Number(ymd[1]), Number(ymd[2]), Number(ymd[3]));
     withoutDate = cleaned.replace(ymd[0], ' ');
   } else if (dmy) {
-    // UK order: day first. A US-format photo would be misread, which is why
-    // the date lands in an editable field rather than being used directly.
+    // UK order: day first. A US-format photo would be misread, which is why the date lands in an editable field rather than being used directly.
     const year = Number(dmy[3]) < 100 ? 2000 + Number(dmy[3]) : Number(dmy[3]);
     date = isoDate(year, Number(dmy[2]), Number(dmy[1]));
     withoutDate = cleaned.replace(dmy[0], ' ');
   }
 
-  // --- readings -----------------------------------------------------------
-  // A meter register is typically 4 to 8 digits, sometimes with one decimal.
-  // Shorter runs are usually serial-number fragments, unit labels or noise.
+  // --- readings
+  // A meter register is typically 4 to 8 digits, sometimes with one decimal. Shorter runs are usually serial-number fragments, unit labels or noise.
   const matches = withoutDate.match(/\b\d{3,8}(?:[.,]\d)?\b/g) ?? [];
   const candidates = matches
     .map((token) => ({ token, value: Number(token.replace(',', '.')) }))
     .filter((c) => Number.isFinite(c.value) && c.value >= 0 && c.value < 100_000_000);
 
-  /**
-   * Which candidate is most likely the register.
-   *
-   * A meter face carries more numbers than the reading: a year of manufacture,
-   * a serial, a model code. The register is the one printed with leading zeros
-   * to a fixed width, so the LONGEST run of digits wins — on a real gas meter
-   * that picks "002500" over the "2007" stamped on the casing. Ties keep
-   * document order, which is the order the meter prints them.
-   */
+ 
   const suggested = candidates.length
     ? candidates.reduce((best, c) => (c.token.length > best.token.length ? c : best)).value
     : null;
@@ -96,10 +67,7 @@ function isoDate(year, month, day) {
   return d.toISOString().slice(0, 10);
 }
 
-/**
- * Sends one image to OCR.space and returns the parsed candidates.
- * @param dataUrl a `data:image/...;base64,...` string
- */
+
 export async function readMeterImage(dataUrl) {
   if (!ocrConfigured()) {
     throw badRequest(
@@ -162,14 +130,7 @@ export async function readMeterImage(dataUrl) {
   return parseMeterText(text);
 }
 
-/**
- * Pulls candidate ESSV voucher codes out of raw OCR text.
- *
- * A code is exactly ten uppercase alphanumerics (e.g. JOV50TOSYR). OCR
- * routinely confuses O/0, I/1 and S/5 on printed codes, so each candidate is
- * offered as found — the server's redemption check is the arbiter, and a
- * wrong guess simply fails to redeem rather than taking anyone's money.
- */
+
 export function parseVoucherText(text) {
   const upper = String(text ?? '').toUpperCase();
   const codes = [];
@@ -177,16 +138,12 @@ export function parseVoucherText(text) {
     if (code.length === 10 && !codes.includes(code)) codes.push(code);
   };
 
-  // 1. A whole token of exactly ten characters, bounded by non-alphanumerics.
-  //    Bounded, because squashing the entire text first welds unrelated words
-  //    into false codes: "SHANGRI-LA POWER ESSV" becomes "SHANGRILAP".
+  // 1. A whole token of exactly ten characters, bounded by non-alphanumerics. Bounded, because squashing the entire text first welds unrelated words into false codes: "SHANGRI-LA POWER ESSV" becomes "SHANGRILAP".  
   for (const token of upper.match(/(?<![A-Z0-9])[A-Z0-9]{10}(?![A-Z0-9])/g) ?? []) {
     add(token);
   }
 
-  // 2. Failing that, a single LINE that is a code printed in groups —
-  //    "JOV50 TOSYR" or "JOV50-TOSYR". Scoped to one line so the join can
-  //    never cross from one piece of text into the next.
+  // 2. Failing that, a single LINE that is a code printed in groups — "JOV50 TOSYR" or "JOV50-TOSYR". Scoped to one line so the join can never cross from one piece of text into the next.
   if (codes.length === 0) {
     for (const line of upper.split(/[\r\n]+/)) {
       const joined = line.replace(/[^A-Z0-9]+/g, '');
@@ -201,7 +158,7 @@ export function parseVoucherText(text) {
   };
 }
 
-/** Reads one voucher photograph and returns the candidate codes. */
+// Reads one voucher photograph and returns the candidate codes.
 export async function readVoucherImage(dataUrl) {
   const { text } = await readMeterImage(dataUrl);
   return parseVoucherText(text);
