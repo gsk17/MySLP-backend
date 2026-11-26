@@ -11,17 +11,6 @@ const REGISTER_LABELS = {
   gas: 'Gas',
 };
 
-/**
- * Pure calculation of a bill from two readings and a tariff.
- * Exported so it can be unit-tested without a database.
- *
- * Billing rules (coursework Appendix 3):
- *  - usage per register = latest reading - previous reading
- *  - cost  per register = usage x the register's price per kWh
- *  - days  = previous reading date UP TO BUT EXCLUDING the latest reading date
- *  - standing charge = days x the daily standing charge
- *  - total = the three usage charges + the standing charge
- */
 export function calculateBill(previous, latest, tariff) {
   const dayKwh = round2(latest.electricityDay - previous.electricityDay);
   const nightKwh = round2(latest.electricityNight - previous.electricityNight);
@@ -47,10 +36,7 @@ export function calculateBill(previous, latest, tariff) {
   };
 }
 
-/**
- * Validates a submission against the customer's previous reading.
- * Throws an ApiError naming the offending register, both values and the date.
- */
+
 export function validateAgainstPrevious(previous, latest) {
   if (latest.readingDate.getTime() <= previous.readingDate.getTime()) {
     throw badRequest(
@@ -72,7 +58,7 @@ export function validateAgainstPrevious(previous, latest) {
   }
 }
 
-/** The customer's most recent reading, or null if they have never submitted one. */
+// The customer's most recent reading, or null if they have never submitted one. 
 export async function findPreviousReading(userId) {
   return MeterReading.findOne({
     userId,
@@ -84,13 +70,6 @@ export async function findPreviousReading(userId) {
     .exec();
 }
 
-/**
- * Submit a set of meter readings.
- *
- * The FIRST submission is stored as the baseline and generates NO bill.
- * Every later submission is validated, then billed against the previous one
- * using the tariff in effect at the moment of calculation.
- */
 export async function createReading(userId, input) {
   const readingDate = toUtcDate(input.readingDate);
   if (readingDate.getTime() > todayUtc().getTime()) {
@@ -108,7 +87,7 @@ export async function createReading(userId, input) {
   };
   const previous = await findPreviousReading(userId);
 
-  // ---- First ever submission: baseline only, no bill. ----------------------
+  // ---- First ever submission: baseline only, no bill.
   if (!previous) {
     const reading = await MeterReading.create({
       userId,
@@ -124,7 +103,7 @@ export async function createReading(userId, input) {
     };
   }
 
-  // ---- Validate BEFORE writing anything. -----------------------------------
+  // ---- Validate BEFORE writing anything.
   validateAgainstPrevious(previous, latest);
   const tariff = await getActiveTariff();
   const computed = calculateBill(previous, latest, tariff);
@@ -152,7 +131,7 @@ export async function createReading(userId, input) {
     },
   });
 
-  // ---- Write the reading and its bill atomically. ---------------------------
+  // ---- Write the reading and its bill atomically.
   if (supportsTransactions()) {
     const session = await mongoose.startSession();
     try {
@@ -175,8 +154,7 @@ export async function createReading(userId, input) {
     }
   }
 
-  // Standalone mongod (local dev / tests) has no transactions: best effort with
-  // a compensating delete so we never leave a reading without its bill.
+  // Standalone mongod (local dev / tests) has no transactions: best effort with a compensating delete so we never leave a reading without its bill.
   const reading = await MeterReading.create(readingDoc);
   try {
     const bill = await Bill.create(makeBillDoc(reading._id));
