@@ -6,20 +6,7 @@ import { User } from '../models/User.js';
 import { sendVerificationEmail, sendPasswordResetEmail } from './mailer.js';
 import { badRequest, conflict, notFound, tooManyRequests } from '../utils/errors.js';
 
-/**
- * One-time email codes, used for two flows: confirming a new address, and
- * resetting a forgotten password.
- *
- * Rules, all enforced server-side:
- *  - 6 digits, generated with a CSPRNG and unbiased across 000000-999999.
- *  - Stored as a SHA-256 HMAC, never in plaintext. A leaked database dump does
- *    not hand over live codes.
- *  - Expire after OTP_TTL_MINUTES, and MongoDB deletes the row by TTL index.
- *  - At most OTP_MAX_ATTEMPTS guesses; the code is destroyed when they run out,
- *    so an attacker cannot grind 10^6 possibilities.
- *  - Resend is rate-limited by OTP_RESEND_SECONDS.
- *  - Compared with timingSafeEqual, so response time leaks nothing.
- */
+
 
 const DIGITS = 6;
 const MAX = 10 ** DIGITS;
@@ -45,22 +32,14 @@ function safeEqual(a, b) {
   return crypto.timingSafeEqual(bufA, bufB);
 }
 
-/**
- * Compares a submitted code against a stored hash, in constant time.
- * Exported so flows that manage their own record — the change of email
- * address — do not reimplement the comparison and get it subtly wrong.
- */
+
 export function verifyRawCode(code, codeHash) {
   return safeEqual(hashCode(String(code)), codeHash);
 }
 
-/**
- * Issue a fresh code for one flow, replacing any outstanding one.
- * Throws if the caller is resending too quickly.
- */
+
 async function issueCode(user, purpose, send, options = {}) {
-  // `options.email` targets an address the user does not hold yet, used by the
-  // change-of-address flow. Everything else sends to the account's address.
+  // `options.email` targets an address the user does not hold yet, used by the change-of-address flow. Everything else sends to the account's address.
   const target = options.email ?? user.email;
   if (options.enforceCooldown) {
     const existing = await EmailVerification.findOne({ userId: user._id, purpose });
@@ -111,19 +90,12 @@ export function issuePasswordResetCode(user, options = {}) {
   return issueCode(user, 'password_reset', sendPasswordResetEmail, options);
 }
 
-/**
- * Code sent to a NEW address the customer wants to move their account to.
- * Reuses the verification email, because to the recipient it is the same
- * thing: prove you control this inbox.
- */
+
 export function issueEmailChangeCode(user, newEmail, options = {}) {
   return issueCode(user, 'email_change', sendVerificationEmail, { ...options, email: newEmail });
 }
 
-/**
- * Validate a code for one flow and consume it.
- * Returns the matching record's user; throws a precise ApiError otherwise.
- */
+
 async function consumeCode(user, code, purpose) {
   const record = await EmailVerification.findOne({ userId: user._id, purpose });
   if (!record) {
@@ -169,7 +141,7 @@ async function consumeCode(user, code, purpose) {
   await EmailVerification.deleteOne({ _id: record._id });
 }
 
-/** Confirm a new address and mark the account verified. */
+// Confirm a new address and mark the account verified. 
 export async function verifyCode(email, code) {
   const user = await User.findOne({ email });
   if (!user) {
@@ -186,17 +158,7 @@ export async function verifyCode(email, code) {
   return user;
 }
 
-/**
- * Reset a forgotten password against an emailed code.
- *
- * Entering the code proves control of the mailbox, so an account that had never
- * confirmed its address becomes verified here too — otherwise the user would
- * reset successfully and still be unable to sign in.
- *
- * `passwordChangedAt` is bumped, which invalidates every token issued before
- * now. A password reset has to end other sessions, or a thief who already has
- * one keeps their access.
- */
+
 export async function resetPasswordWithCode(email, code, newPassword) {
   const user = await User.findOne({ email }).select('+passwordHash');
   if (!user) {
@@ -216,7 +178,7 @@ export async function resetPasswordWithCode(email, code, newPassword) {
   return user;
 }
 
-/** Discards any outstanding codes, e.g. when an unverified signup is replaced. */
+// Discards any outstanding codes, e.g. when an unverified signup is replaced. 
 export async function clearVerification(userId) {
   await EmailVerification.deleteMany({ userId });
 }
