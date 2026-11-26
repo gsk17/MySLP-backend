@@ -7,12 +7,7 @@ import { supportsTransactions } from '../db.js';
 import { badRequest, conflict, notFound } from '../utils/errors.js';
 import { normaliseVoucherCode, round2 } from '../utils/normalise.js';
 
-/**
- * Pay a bill from the customer's energy credit.
- *
- * Guards: the bill must belong to this customer, be unpaid, be the oldest
- * unpaid bill, and be covered by the balance. All writes happen together.
- */
+
 export async function payBill(userId, billId) {
   const bill = await Bill.findOne({
     _id: billId,
@@ -57,8 +52,7 @@ export async function payBill(userId, billId) {
         }
       : {};
 
-    // Conditional update: re-checks status and balance at write time, so two
-    // concurrent requests cannot both pay the same bill.
+    // Conditional update: re-checks status and balance at write time, so two concurrent requests cannot both pay the same bill.
     const updatedBill = await Bill.findOneAndUpdate(
       {
         _id: bill._id,
@@ -132,13 +126,7 @@ export async function payBill(userId, billId) {
   return apply();
 }
 
-/**
- * Redeem an ESSV voucher.
- *
- * The claim is a single atomic findOneAndUpdate on { code, redeemed: false }.
- * If it returns null we re-query by code to tell "not found" apart from
- * "already redeemed" — the two errors the coursework requires separately.
- */
+
 export async function redeemVoucher(userId, rawCode) {
   const code = normaliseVoucherCode(rawCode);
   if (!code) {
