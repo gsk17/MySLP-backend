@@ -1,18 +1,6 @@
 import nodemailer from 'nodemailer';
 import { config } from '../config.js';
 
-/**
- * Email delivery.
- *
- * Deliberately plain SMTP rather than a provider SDK, so the same code works
- * with Gmail, Resend, Brevo, SendGrid, Mailgun or Mailtrap — only the .env
- * values change. See README "Email (OTP verification)" for each one.
- *
- * With no SMTP_HOST configured the mailer falls back to CONSOLE mode: the
- * message, including the code, is printed to the server log instead of sent.
- * That keeps registration working for a marker who has not set up email, and
- * is logged loudly so it can never be mistaken for real delivery.
- */
 
 let transporter = null;
 let verified = false;
@@ -24,8 +12,7 @@ function getTransporter() {
   transporter = nodemailer.createTransport({
     host: config.smtp.host,
     port: config.smtp.port,
-    // Only sent when SMTP_NAME is configured; otherwise nodemailer's default
-    // applies. See config.smtp.name.
+    // Only sent when SMTP_NAME is configured; otherwise nodemailer's default applies. See config.smtp.name.
     ...(config.smtp.name ? { name: config.smtp.name } : {}),
     // Port 465 is implicit TLS; 587 and 2525 upgrade with STARTTLS.
     secure: config.smtp.port === 465,
@@ -41,7 +28,7 @@ function getTransporter() {
   return transporter;
 }
 
-/** Checks the SMTP credentials once at startup so failures surface early. */
+//Checks the SMTP credentials once at startup so failures surface early.
 export async function verifyMailer() {
   if (mailMode() === 'console') return false;
   if (verified) return true;
@@ -85,20 +72,13 @@ async function send(to, subject, html, text) {
   };
 }
 
-/* ========================================================================== */
-/* Templates                                                                  */
-/* ========================================================================== */
+//Templates
 
 const ACCENT = '#E3F64B';
 const INK = '#0A0A0B';
 const SURFACE = '#1A1A1D';
 const MUTED = '#9A9AA2';
 
-/**
- * Email HTML is not web HTML: clients strip <style> blocks, ignore flexbox and
- * CSS variables, and Outlook renders through Word. Hence tables, inline styles
- * and hard-coded hex values rather than the app's design tokens.
- */
 function verificationTemplate(name, code, minutes) {
   const spaced = code.split('').join('&nbsp;&nbsp;');
   return `<!doctype html>
@@ -158,12 +138,7 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
-/**
- * Shared shell for both code emails, so they stay visually identical.
- * Email HTML is not web HTML: clients strip <style> blocks, ignore flexbox and
- * CSS variables, and Outlook renders through Word. Hence tables, inline styles
- * and hard-coded hex values rather than the app's design tokens.
- */
+
 function codeTemplate({ name, heading, intro, code, minutes, footnote }) {
   const spaced = code.split('').join('&nbsp;&nbsp;');
   return `<!doctype html>
@@ -256,12 +231,7 @@ export function sendVerificationEmail(to, name, code, minutes) {
   );
 }
 
-/**
- * A plain notice email — a heading, a sentence, and an optional table of
- * figures. Used for bill, receipt and low-credit alerts, which carry values
- * rather than a code, so the big lime code block of `codeTemplate` is wrong
- * for them. Same shell otherwise, so the family stays consistent.
- */
+
 function noticeTemplate({ name, heading, intro, rows = [], footnote = '' }) {
   const table = rows.length
     ? `<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="margin:4px 0 8px;">
@@ -319,7 +289,7 @@ function noticeTemplate({ name, heading, intro, rows = [], footnote = '' }) {
 </html>`;
 }
 
-/** Sends a notice email. Returns false in console mode or on failure. */
+//Sends a notice email. Returns false in console mode or on failure. 
 export async function sendNoticeEmail(to, subject, parts) {
   const text =
     `Hello ${parts.name},\n\n${parts.heading}\n\n${parts.intro}\n\n` +
