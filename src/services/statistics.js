@@ -6,13 +6,7 @@ import { Payment } from '../models/Payment.js';
 import { Voucher } from '../models/Voucher.js';
 import { normalisePostcode, round2 } from '../utils/normalise.js';
 
-/**
- * Average combined electricity + gas cost per day for every property in a
- * council tax band whose postcode starts with the given prefix.
- *
- * The standing charge is deliberately EXCLUDED: the field is named
- * `average_electricity_gas_cost_per_day`, so it covers energy usage only.
- */
+
 export async function averageEnergyCostPerDay(band, postcodePrefix) {
   const prefix = normalisePostcode(postcodePrefix);
   const bandUpper = band.toUpperCase();
@@ -68,7 +62,7 @@ export async function averageEnergyCostPerDay(band, postcodePrefix) {
   };
 }
 
-/** Per-customer averages, in kWh, for the administrator dashboard. */
+// Per-customer averages, in kWh, for the administrator dashboard.
 export async function customerConsumptionAverages(userId) {
   const [agg] = await Bill.aggregate([
     {
@@ -120,7 +114,7 @@ export async function customerConsumptionAverages(userId) {
   };
 }
 
-/** Headline numbers and breakdowns for the administrator overview. */
+// Headline numbers and breakdowns for the administrator overview.
 export async function adminStatistics() {
   const [customers, totalsAgg, revenueAgg, vouchersRedeemed, byBand, byPrefix] = await Promise.all([
     User.countDocuments({
@@ -355,7 +349,7 @@ async function consumptionByPostcodePrefix() {
   return rows;
 }
 
-/** Time series + averages powering the customer's Usage screen. */
+// Time series + averages powering the customer's Usage screen. 
 export async function customerUsage(userId) {
   const id = new Types.ObjectId(String(userId));
   const [bills, readings, averages] = await Promise.all([
